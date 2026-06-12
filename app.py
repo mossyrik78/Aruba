@@ -208,6 +208,58 @@ def api_config():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/config/full", methods=["GET"])
+def api_config_full():
+    """Get full configuration including connection settings (client_secret omitted)."""
+    try:
+        plan = load_plan(CONFIG_FILE)
+        central = dict(plan.get("central", {}))
+        secret_set = bool(central.pop("client_secret", None))
+        config = {
+            "central": {**central, "client_secret_set": secret_set},
+            "templates": plan.get("templates", {}),
+            "template_rules": plan.get("template_rules", {}),
+            "firmware_group_rules": plan.get("firmware_group_rules", {}),
+            "ui_group_rules": plan.get("ui_group_rules", {}),
+        }
+        return jsonify({"success": True, "config": config})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/config", methods=["PUT"])
+def api_update_config():
+    """Update configuration sections in the migration plan YAML."""
+    try:
+        data = request.json
+        plan = load_plan(CONFIG_FILE)
+
+        if "central" in data:
+            existing = plan.setdefault("central", {})
+            for key, value in data["central"].items():
+                if value is not None and value != "":
+                    existing[key] = value
+
+        if "templates" in data:
+            tmpl = plan.setdefault("templates", {})
+            for key, value in data["templates"].items():
+                if value:
+                    tmpl[key] = value
+                else:
+                    tmpl.pop(key, None)
+
+        for section in ("template_rules", "firmware_group_rules", "ui_group_rules"):
+            if section in data:
+                plan[section] = data[section]
+
+        with CONFIG_FILE.open("w", encoding="utf-8") as handle:
+            yaml.safe_dump(plan, handle, sort_keys=False)
+
+        return jsonify({"success": True, "message": "Configuration updated"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/api/import-inventory", methods=["POST"])
 def api_import_inventory():
     """Import all devices from Aruba Central inventory into the migration plan."""
@@ -367,6 +419,141 @@ def api_import_csv():
             result["message"] += f", {len(errors)} errors"
         
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sites", methods=["GET"])
+def api_sites():
+    """Get all sites and their variables from the migration plan."""
+    try:
+        plan = load_plan(CONFIG_FILE)
+        sites = plan.get("sites", {})
+        return jsonify({"success": True, "sites": sites, "count": len(sites)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/import-sites-excel", methods=["POST"])
+def api_import_sites_excel():
+    """Import site subnet definitions from an Excel (.xlsx) file."""
+    try:
+        import openpyxl
+    except ImportError:
+        return jsonify({"success": False, "error": "openpyxl is not installed. Run: pip install openpyxl"}), 500
+
+    try:
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+
+        if not (file.filename.endswith(".xlsx") or file.filename.endswith(".xls")):
+            return jsonify({"success": False, "error": "File must be an Excel file (.xlsx)"}), 400
+
+        try:
+            wb = openpyxl.load_workbook(file.stream, read_only=True, data_only=True)
+        except Exception as exc:
+            return jsonify({"success": False, "error": f"Could not read Excel file: {exc}"}), 400
+
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+
+        if not rows:
+            return jsonify({"success": False, "error": "Excel file is empty"}), 400
+
+        raw_headers = rows[0]
+        headers = [str(h).lower().strip() if h is not None else "" for h in raw_headers]
+
+        site_col = next(
+            (headers.index(n) for n in ("site", "site_name", "location", "site name") if n in headers),
+            None,
+        )
+        if site_col is None:
+            return jsonify({"success": False, "error": "Excel must contain a 'site' or 'site_name' column"}), 400
+
+        subnet_col = next(
+            (headers.index(n) for n in ("subnet", "network", "cidr", "ip_network", "ip network") if n in headers),
+            None,
+        )
+
+        imported: Dict[str, Any] = {}
+        errors: list = []
+
+        for row_idx, row in enumerate(rows[1:], start=2):
+            if all(v is None for v in row):
+                continue
+
+            raw_site = row[site_col]
+            if raw_site is None or str(raw_site).strip() == "":
+                errors.append(f"Row {row_idx}: missing site name — skipped")
+                continue
+
+            site_name = str(raw_site).strip()
+            site_data = imported.setdefault(site_name, {})
+
+            if subnet_col is not None and row[subnet_col] is not None:
+                subnet_val = str(row[subnet_col]).strip()
+                if subnet_val:
+                    entry: Dict[str, Any] = {"subnet": subnet_val}
+                    for i, hdr in enumerate(headers):
+                        if i in (site_col, subnet_col) or not hdr:
+                            continue
+                        val = row[i]
+                        if val is not None and str(val).strip():
+                            entry[hdr] = int(val) if isinstance(val, float) and val == int(val) else val
+                    site_data.setdefault("subnets", []).append(entry)
+            else:
+                for i, hdr in enumerate(headers):
+                    if i == site_col or not hdr:
+                        continue
+                    val = row[i]
+                    if val is not None and str(val).strip():
+                        site_data[hdr] = int(val) if isinstance(val, float) and val == int(val) else val
+
+        if not imported:
+            return jsonify({"success": False, "error": "No valid site data found in Excel"}), 400
+
+        plan = load_plan(CONFIG_FILE)
+        existing = plan.setdefault("sites", {})
+        added = updated = 0
+
+        for name, data in imported.items():
+            if name in existing:
+                if "subnets" in data:
+                    cur_subnets = existing[name].setdefault("subnets", [])
+                    cur_keys = {s.get("subnet") if isinstance(s, dict) else s for s in cur_subnets}
+                    for entry in data["subnets"]:
+                        key = entry.get("subnet") if isinstance(entry, dict) else entry
+                        if key not in cur_keys:
+                            cur_subnets.append(entry)
+                for k, v in data.items():
+                    if k != "subnets":
+                        existing[name][k] = v
+                updated += 1
+            else:
+                existing[name] = data
+                added += 1
+
+        plan["sites"] = existing
+        with CONFIG_FILE.open("w", encoding="utf-8") as handle:
+            yaml.safe_dump(plan, handle, sort_keys=False)
+
+        msg = f"Imported {added} new site{'s' if added != 1 else ''}, updated {updated} existing"
+        if errors:
+            msg += f", {len(errors)} row{'s' if len(errors) != 1 else ''} skipped"
+
+        return jsonify({
+            "success": True,
+            "added": added,
+            "updated": updated,
+            "sites_imported": list(imported.keys()),
+            "errors": errors,
+            "message": msg,
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

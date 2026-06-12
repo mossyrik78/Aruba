@@ -1,3 +1,5 @@
 requests>=2.31.0
 PyYAML>=6.0
 typer[all]>=0.10.0
+Flask>=2.3.0
+openpyxl>=3.1.0

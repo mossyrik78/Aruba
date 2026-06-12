@@ -478,6 +478,7 @@
             <button class="tab-button" onclick="switchTab('add')">➕ Add Device</button>
             <button class="tab-button" onclick="switchTab('migrate')">⚡ Migrate</button>
             <button class="tab-button" onclick="switchTab('inventory')">📊 Inventory</button>
+            <button class="tab-button" onclick="switchTab('config')">⚙️ Config</button>
         </div>
 
         <!-- Devices Tab -->
@@ -664,6 +665,138 @@ B8BB23456789,00:11:22:33:44:66,Aruba AP-515,access_point,Building B</pre>
                 </div>
             </div>
         </div>
+
+        <!-- Config Tab -->
+        <div id="config" class="tab-content">
+            <div id="configAlert" class="alert" style="margin-bottom:24px;"></div>
+
+            <!-- Connection Settings -->
+            <div class="card">
+                <h2>⚙️ Connection Settings</h2>
+                <p style="margin-bottom:24px;">Aruba Central API credentials and connection configuration.</p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cfgBaseUrl">Base URL</label>
+                        <input type="text" id="cfgBaseUrl" placeholder="https://portal2.central-eu.arubanetworks.com">
+                    </div>
+                    <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end;">
+                        <div class="checkbox-item" style="padding-bottom:14px;">
+                            <input type="checkbox" id="cfgVerifySsl">
+                            <label for="cfgVerifySsl" style="margin:0;">Verify SSL</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cfgClientId">Client ID</label>
+                        <input type="text" id="cfgClientId" placeholder="Your Aruba Central client ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgClientSecret">Client Secret</label>
+                        <input type="password" id="cfgClientSecret" placeholder="Leave blank to keep existing secret">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cfgDefaultTemplate">Default Template ID</label>
+                    <input type="text" id="cfgDefaultTemplate" placeholder="Fallback template when no rule matches">
+                </div>
+                <button class="btn-primary" onclick="saveConnectionSettings()">💾 Save Connection Settings</button>
+            </div>
+
+            <!-- Template Rules -->
+            <div class="card">
+                <h2>📋 Template Rules</h2>
+                <p style="margin-bottom:16px;">Map model or device-type substrings to template IDs. First match wins.</p>
+                <div style="display:grid;grid-template-columns:1fr 32px 1fr 40px;gap:8px 12px;margin-bottom:8px;padding:0 2px;">
+                    <span style="font-size:13px;font-weight:600;color:#64748b;">Pattern</span>
+                    <span></span>
+                    <span style="font-size:13px;font-weight:600;color:#64748b;">Template ID</span>
+                    <span></span>
+                </div>
+                <div id="templateRulesContainer"></div>
+                <div style="display:flex;gap:12px;margin-top:16px;">
+                    <button class="btn-secondary" onclick="addRule('template')">+ Add Rule</button>
+                    <button class="btn-primary" onclick="saveRules('template')">💾 Save Template Rules</button>
+                </div>
+            </div>
+
+            <!-- Firmware Group Rules -->
+            <div class="card">
+                <h2>📦 Firmware Group Rules</h2>
+                <p style="margin-bottom:16px;">Map model or device-type substrings to firmware group IDs.</p>
+                <div style="display:grid;grid-template-columns:1fr 32px 1fr 40px;gap:8px 12px;margin-bottom:8px;padding:0 2px;">
+                    <span style="font-size:13px;font-weight:600;color:#64748b;">Pattern</span>
+                    <span></span>
+                    <span style="font-size:13px;font-weight:600;color:#64748b;">Firmware Group ID</span>
+                    <span></span>
+                </div>
+                <div id="firmwareRulesContainer"></div>
+                <div style="display:flex;gap:12px;margin-top:16px;">
+                    <button class="btn-secondary" onclick="addRule('firmware')">+ Add Rule</button>
+                    <button class="btn-primary" onclick="saveRules('firmware')">💾 Save Firmware Rules</button>
+                </div>
+            </div>
+
+            <!-- UI Group Rules -->
+            <div class="card">
+                <h2>🖥️ UI Group Rules</h2>
+                <p style="margin-bottom:16px;">Map model or device-type substrings to UI group IDs.</p>
+                <div style="display:grid;grid-template-columns:1fr 32px 1fr 40px;gap:8px 12px;margin-bottom:8px;padding:0 2px;">
+                    <span style="font-size:13px;font-weight:600;color:#64748b;">Pattern</span>
+                    <span></span>
+                    <span style="font-size:13px;font-weight:600;color:#64748b;">UI Group ID</span>
+                    <span></span>
+                </div>
+                <div id="uiRulesContainer"></div>
+                <div style="display:flex;gap:12px;margin-top:16px;">
+                    <button class="btn-secondary" onclick="addRule('ui')">+ Add Rule</button>
+                    <button class="btn-primary" onclick="saveRules('ui')">💾 Save UI Rules</button>
+                </div>
+            </div>
+
+            <!-- Site Subnets -->
+            <div class="card">
+                <h2>🏢 Site Subnets</h2>
+                <p style="margin-bottom:20px;">Import per-site subnet definitions from Excel. Subnets are stored as site variables and used during template rendering.</p>
+
+                <div class="stats" style="margin-bottom:20px;">
+                    <div class="stat">
+                        <div class="stat-value" id="sitesCount">—</div>
+                        <div class="stat-label">Configured Sites</div>
+                    </div>
+                </div>
+                <div id="sitesList" style="margin-bottom:24px;"></div>
+
+                <h3>Import from Excel</h3>
+                <div id="sitesImportAlert" class="alert" style="margin:16px 0;"></div>
+                <p style="margin:12px 0 20px 0;">Each row should represent one subnet. Multiple rows with the same site name are grouped together.</p>
+
+                <div class="form-group">
+                    <label for="sitesExcelFile">Excel File (.xlsx) <span style="color:#ef4444;">*</span></label>
+                    <input type="file" id="sitesExcelFile" accept=".xlsx,.xls" style="padding:8px;border:2px dashed #e2e8f0;cursor:pointer;">
+                </div>
+
+                <details style="margin:16px 0;">
+                    <summary style="cursor:pointer;color:#3b82f6;font-weight:500;">📋 Expected Excel Format</summary>
+                    <div style="margin-top:12px;padding:16px;background:#f8fafc;border-radius:8px;">
+                        <p style="font-size:13px;margin-bottom:6px;"><strong>Required:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">site</code> or <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">site_name</code></p>
+                        <p style="font-size:13px;margin-bottom:6px;"><strong>Recommended:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">subnet</code> in CIDR notation</p>
+                        <p style="font-size:13px;margin-bottom:12px;"><strong>Optional:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">gateway</code>, <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">vlan</code>, <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">description</code>, or any site variable</p>
+                        <pre style="font-size:12px;overflow-x:auto;background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;line-height:1.6;">site,subnet,gateway,vlan,description
+Building A,192.168.1.0/24,192.168.1.1,10,Main office LAN
+Building A,10.0.1.0/24,10.0.1.1,20,Guest Wi-Fi
+Building B,192.168.2.0/24,192.168.2.1,10,Branch office</pre>
+                    </div>
+                </details>
+
+                <button class="btn-success" onclick="handleSitesExcelUpload()" style="width:100%;padding:12px;margin-top:4px;">📥 Import Site Subnets from Excel</button>
+
+                <div id="sitesImportResults" style="display:none;margin-top:24px;">
+                    <h3>📋 Import Results</h3>
+                    <div id="sitesResultsContainer" class="textarea-scroll"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -691,6 +824,8 @@ B8BB23456789,00:11:22:33:44:66,Aruba AP-515,access_point,Building B</pre>
                 loadDevicesForMigration();
             } else if (tabName === 'inventory') {
                 loadInventory();
+            } else if (tabName === 'config') {
+                loadConfig();
             }
         }
 
@@ -1023,6 +1158,184 @@ B8BB23456789,00:11:22:33:44:66,Aruba AP-515,access_point,Building B</pre>
                 showAlert(`Error: ${error}`, 'error', 'inventoryAlert');
             }
         }
+
+        // ── Config Tab ──────────────────────────────────────────────────
+        const _rulesMeta = {
+            template: { container: 'templateRulesContainer', apiKey: 'template_rules',       keyPh: 'Pattern (e.g. "6100")', valPh: 'Template ID' },
+            firmware: { container: 'firmwareRulesContainer', apiKey: 'firmware_group_rules', keyPh: 'Pattern (e.g. "ap")',   valPh: 'Firmware Group ID' },
+            ui:       { container: 'uiRulesContainer',       apiKey: 'ui_group_rules',       keyPh: 'Pattern (e.g. "6100")', valPh: 'UI Group ID' }
+        };
+
+        function _makeRuleRow(meta, key, value) {
+            const row = document.createElement('div');
+            row.className = 'rule-row';
+            row.style.cssText = 'display:grid;grid-template-columns:1fr 32px 1fr 40px;gap:8px 12px;margin-bottom:10px;align-items:center;';
+
+            const kIn = document.createElement('input');
+            kIn.type = 'text'; kIn.value = key; kIn.placeholder = meta.keyPh;
+
+            const sep = document.createElement('span');
+            sep.textContent = '→';
+            sep.style.cssText = 'color:#94a3b8;text-align:center;font-size:18px;';
+
+            const vIn = document.createElement('input');
+            vIn.type = 'text'; vIn.value = value; vIn.placeholder = meta.valPh;
+
+            const del = document.createElement('button');
+            del.className = 'btn-danger btn-small';
+            del.textContent = '✕';
+            del.onclick = () => {
+                row.remove();
+                const c = document.getElementById(meta.container);
+                if (!c.querySelector('.rule-row')) {
+                    c.innerHTML = '<p class="rules-empty" style="color:#94a3b8;font-style:italic;padding:8px 0;">No rules defined. Click "+ Add Rule" to add one.</p>';
+                }
+            };
+
+            row.append(kIn, sep, vIn, del);
+            return row;
+        }
+
+        function _renderRules(type, rules) {
+            const meta = _rulesMeta[type];
+            const c = document.getElementById(meta.container);
+            c.innerHTML = '';
+            if (!rules || rules.length === 0) {
+                c.innerHTML = '<p class="rules-empty" style="color:#94a3b8;font-style:italic;padding:8px 0;">No rules defined. Click "+ Add Rule" to add one.</p>';
+                return;
+            }
+            rules.forEach(r => c.appendChild(_makeRuleRow(meta, r.key, r.value)));
+        }
+
+        function addRule(type) {
+            const meta = _rulesMeta[type];
+            const c = document.getElementById(meta.container);
+            const empty = c.querySelector('.rules-empty');
+            if (empty) empty.remove();
+            const row = _makeRuleRow(meta, '', '');
+            c.appendChild(row);
+            row.querySelector('input').focus();
+        }
+
+        function _getRulesObj(type) {
+            const obj = {};
+            document.getElementById(_rulesMeta[type].container).querySelectorAll('.rule-row').forEach(row => {
+                const [kIn, , vIn] = row.querySelectorAll('input');
+                const k = kIn.value.trim();
+                if (k) obj[k] = vIn.value.trim();
+            });
+            return obj;
+        }
+
+        async function loadConfig() {
+            try {
+                const resp = await fetch('/api/config/full');
+                const data = await resp.json();
+                if (!data.success) { showAlert('Error loading config: ' + data.error, 'error', 'configAlert'); return; }
+                const cfg = data.config;
+                document.getElementById('cfgBaseUrl').value         = cfg.central?.base_url  || '';
+                document.getElementById('cfgClientId').value        = cfg.central?.client_id || '';
+                document.getElementById('cfgClientSecret').value    = '';
+                document.getElementById('cfgVerifySsl').checked     = cfg.central?.verify_ssl !== false;
+                document.getElementById('cfgDefaultTemplate').value = cfg.templates?.default_template_id || '';
+                _renderRules('template', Object.entries(cfg.template_rules       || {}).map(([k,v]) => ({key:k,value:v})));
+                _renderRules('firmware', Object.entries(cfg.firmware_group_rules  || {}).map(([k,v]) => ({key:k,value:v})));
+                _renderRules('ui',       Object.entries(cfg.ui_group_rules        || {}).map(([k,v]) => ({key:k,value:v})));
+            } catch(e) {
+                showAlert('Error loading config: ' + e, 'error', 'configAlert');
+            }
+            loadSitesSummary();
+        }
+
+        async function loadSitesSummary() {
+            try {
+                const resp = await fetch('/api/sites');
+                const data = await resp.json();
+                if (!data.success) return;
+                document.getElementById('sitesCount').textContent = data.count;
+                const listEl = document.getElementById('sitesList');
+                const names = Object.keys(data.sites);
+                if (names.length === 0) {
+                    listEl.innerHTML = '<p style="color:#94a3b8;font-style:italic;">No sites configured yet.</p>';
+                    return;
+                }
+                listEl.innerHTML = names.map(name => {
+                    const site = data.sites[name];
+                    const count = site.subnets ? site.subnets.length : 0;
+                    const subs = count
+                        ? site.subnets.map(s => `<span style="font-size:12px;font-family:monospace;background:#e2e8f0;padding:2px 7px;border-radius:4px;margin-right:6px;">${typeof s === 'object' ? s.subnet : s}</span>`).join('')
+                        : '<span style="font-size:12px;color:#94a3b8;font-style:italic;">no subnets</span>';
+                    return `<div style="padding:12px 16px;background:#f8fafc;border-radius:10px;margin-bottom:8px;border-left:3px solid #3b82f6;">
+                        <span style="font-weight:600;color:#0f172a;">${name}</span>
+                        <div style="margin-top:6px;">${subs}</div>
+                    </div>`;
+                }).join('');
+            } catch(e) {}
+        }
+
+        async function handleSitesExcelUpload() {
+            const fileInput = document.getElementById('sitesExcelFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showAlert('Please select an Excel file to upload', 'error', 'sitesImportAlert');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const resp = await fetch('/api/import-sites-excel', { method: 'POST', body: formData });
+                const data = await resp.json();
+                const results = document.getElementById('sitesImportResults');
+                const container = document.getElementById('sitesResultsContainer');
+
+                if (data.success) {
+                    showAlert(data.message, 'success', 'sitesImportAlert');
+                    fileInput.value = '';
+                    const items = (data.sites_imported || []).map(n =>
+                        `<div class="result-item success">✓ ${n}</div>`
+                    ).concat((data.errors || []).map(e =>
+                        `<div class="result-item error">⚠ ${e}</div>`
+                    ));
+                    if (items.length) { container.innerHTML = items.join(''); results.style.display = 'block'; }
+                    loadSitesSummary();
+                } else {
+                    showAlert('Error: ' + data.error, 'error', 'sitesImportAlert');
+                }
+            } catch(e) {
+                showAlert('Error uploading file: ' + e, 'error', 'sitesImportAlert');
+            }
+        }
+
+        async function saveConnectionSettings() {
+            const secret = document.getElementById('cfgClientSecret').value.trim();
+            const payload = {
+                central: {
+                    base_url:   document.getElementById('cfgBaseUrl').value.trim(),
+                    client_id:  document.getElementById('cfgClientId').value.trim(),
+                    verify_ssl: document.getElementById('cfgVerifySsl').checked,
+                },
+                templates: { default_template_id: document.getElementById('cfgDefaultTemplate').value.trim() || null }
+            };
+            if (secret) payload.central.client_secret = secret;
+            try {
+                const resp = await fetch('/api/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+                const data = await resp.json();
+                if (data.success) { showAlert('Connection settings saved!', 'success', 'configAlert'); document.getElementById('cfgClientSecret').value = ''; }
+                else              { showAlert('Error: ' + data.error, 'error', 'configAlert'); }
+            } catch(e) { showAlert('Error: ' + e, 'error', 'configAlert'); }
+        }
+
+        async function saveRules(type) {
+            const meta = _rulesMeta[type];
+            const label = {template:'Template', firmware:'Firmware group', ui:'UI group'}[type];
+            try {
+                const resp = await fetch('/api/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ [meta.apiKey]: _getRulesObj(type) }) });
+                const data = await resp.json();
+                if (data.success) { showAlert(label + ' rules saved!', 'success', 'configAlert'); }
+                else              { showAlert('Error: ' + data.error, 'error', 'configAlert'); }
+            } catch(e) { showAlert('Error: ' + e, 'error', 'configAlert'); }
+        }
+        // ── End Config Tab ───────────────────────────────────────────────
 
         // Load devices on page load
         window.addEventListener('load', loadDevices);
