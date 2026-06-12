@@ -8,7 +8,7 @@ import yaml
 
 from aruba_central import ArubaCentralClient, build_config, dump_json
 
-app = typer.Typer(help="Aruba Central switch and AP automation for brownfield and new device onboarding")
+app = typer.Typer(help="Migration of new and Brownfield sites via Aruba Central")
 
 
 def _api_error(exc: Exception) -> None:
