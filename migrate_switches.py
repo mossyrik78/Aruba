@@ -2,12 +2,27 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import requests as _requests
 import typer
 import yaml
 
 from aruba_central import ArubaCentralClient, build_config, dump_json
 
 app = typer.Typer(help="Aruba Central switch and AP automation for brownfield and new device onboarding")
+
+
+def _api_error(exc: Exception) -> None:
+    if isinstance(exc, _requests.exceptions.ConnectionError):
+        typer.echo("Connection error: cannot reach Aruba Central. Check base_url and network.", err=True)
+    elif isinstance(exc, _requests.exceptions.HTTPError):
+        status = exc.response.status_code if exc.response is not None else "?"
+        body = exc.response.text[:300] if exc.response is not None else ""
+        typer.echo(f"HTTP {status}: {body}", err=True)
+    elif isinstance(exc, _requests.exceptions.RequestException):
+        typer.echo(f"Request error: {exc}", err=True)
+    else:
+        typer.echo(f"Error: {exc}", err=True)
+    raise typer.Exit(1)
 
 
 @app.callback(invoke_without_command=True)
@@ -283,7 +298,10 @@ def inventory(
     """List devices currently known to Aruba Central."""
     plan = load_plan(ctx.obj["config_file"])
     client = load_client(plan)
-    devices = client.list_devices(limit=limit)
+    try:
+        devices = client.list_devices(limit=limit)
+    except Exception as exc:
+        _api_error(exc)
     typer.echo(dump_json(devices))
 
 
@@ -296,7 +314,10 @@ def plan_from_inventory(
     """Generate a migration plan from Aruba Central inventory using template rules."""
     plan = load_plan(ctx.obj["config_file"])
     client = load_client(plan)
-    inventory = client.list_devices(limit=limit)
+    try:
+        inventory = client.list_devices(limit=limit)
+    except Exception as exc:
+        _api_error(exc)
 
     devices: List[Dict[str, Any]] = []
     for item in inventory:
@@ -355,18 +376,22 @@ def auto_migrate(
             f"Processing {serial}: claim={action['claim']}, wipe={action['wipe']}, template={target_template}"
         )
         if dry_run:
-            results.append({**action, "target_template": target_template})
+            dry = {k: v for k, v in {**action, "target_template": target_template}.items() if v is not None}
+            results.append(dry)
             continue
 
-        result = client.migrate_device(
-            serial,
-            target_template,
-            wipe=action["wipe"],
-            claim=action["claim"],
-            mac_address=action["mac_address"],
-            firmware_group_id=action["firmware_group_id"],
-            ui_group_id=action["ui_group_id"],
-        )
+        try:
+            result = client.migrate_device(
+                serial,
+                target_template,
+                wipe=action["wipe"],
+                claim=action["claim"],
+                mac_address=action["mac_address"],
+                firmware_group_id=action["firmware_group_id"],
+                ui_group_id=action["ui_group_id"],
+            )
+        except Exception as exc:
+            _api_error(exc)
         results.append(result)
 
     typer.echo(dump_json(results))
@@ -388,10 +413,136 @@ def validate(
             results["devices"].append({"serial": serial, "error": "no template_id or match rule"})
             continue
 
-        validation = client.validate_template(target_template)
+        try:
+            validation = client.validate_template(target_template)
+        except Exception as exc:
+            _api_error(exc)
         results["devices"].append({"serial": serial, "template": target_template, "template_validation": validation})
 
     typer.echo(dump_json(results))
+
+
+@app.command()
+def migrate(
+    ctx: typer.Context,
+    dry_run: bool = typer.Option(False, help="Print actions but do not execute them."),
+):
+    """Migrate all devices in the plan (alias for auto-migrate with dry-run support)."""
+    plan = load_plan(ctx.obj["config_file"])
+    client = load_client(plan)
+
+    devices: List[Dict[str, Any]] = plan.get("devices", [])
+    if not devices:
+        raise typer.BadParameter("No devices found in the plan file.")
+
+    results: List[Dict[str, Any]] = []
+    for device in devices:
+        serial = device["serial"]
+        target_template = resolve_template(device, plan)
+        if not target_template:
+            raise typer.BadParameter(f"Missing template resolution for device {serial}")
+
+        action = prepare_device_action(device, plan)
+        typer.echo(f"Processing {serial}: claim={action['claim']}, wipe={action['wipe']}, template={target_template}")
+
+        if dry_run:
+            dry = {k: v for k, v in {**action, "target_template": target_template}.items() if v is not None}
+            results.append(dry)
+            continue
+
+        try:
+            result = client.migrate_device(
+                serial,
+                target_template,
+                wipe=action["wipe"],
+                claim=action["claim"],
+                mac_address=action["mac_address"],
+                firmware_group_id=action["firmware_group_id"],
+                ui_group_id=action["ui_group_id"],
+            )
+        except Exception as exc:
+            _api_error(exc)
+        results.append(result)
+
+    typer.echo(dump_json(results))
+
+
+@app.command()
+def status(
+    ctx: typer.Context,
+    serial: str,
+):
+    """Show the current status of a device in Aruba Central."""
+    plan = load_plan(ctx.obj["config_file"])
+    client = load_client(plan)
+    try:
+        device = client.get_device(serial)
+    except Exception as exc:
+        _api_error(exc)
+    typer.echo(dump_json(device))
+
+
+@app.command()
+def wipe(
+    ctx: typer.Context,
+    serial: str,
+):
+    """Factory-reset a device in Aruba Central."""
+    plan = load_plan(ctx.obj["config_file"])
+    client = load_client(plan)
+    try:
+        result = client.wipe_device(serial)
+    except Exception as exc:
+        _api_error(exc)
+    typer.echo(dump_json(result))
+
+
+@app.command("assign-template")
+def assign_template(
+    ctx: typer.Context,
+    serial: str,
+    template_id: str,
+):
+    """Assign a template to a device in Aruba Central."""
+    plan = load_plan(ctx.obj["config_file"])
+    client = load_client(plan)
+    try:
+        result = client.assign_template_to_device(serial, template_id)
+    except Exception as exc:
+        _api_error(exc)
+    typer.echo(dump_json(result))
+
+
+@app.command("assign-firmware-group")
+def assign_firmware_group(
+    ctx: typer.Context,
+    serial: str,
+    group_id: str,
+):
+    """Assign a firmware upgrade group to a device in Aruba Central."""
+    plan = load_plan(ctx.obj["config_file"])
+    client = load_client(plan)
+    try:
+        result = client.assign_group_to_device(serial, group_id)
+    except Exception as exc:
+        _api_error(exc)
+    typer.echo(dump_json(result))
+
+
+@app.command("assign-ui-group")
+def assign_ui_group(
+    ctx: typer.Context,
+    serial: str,
+    group_id: str,
+):
+    """Assign a UI group to a device in Aruba Central."""
+    plan = load_plan(ctx.obj["config_file"])
+    client = load_client(plan)
+    try:
+        result = client.assign_group_to_device(serial, group_id)
+    except Exception as exc:
+        _api_error(exc)
+    typer.echo(dump_json(result))
 
 
 if __name__ == "__main__":
