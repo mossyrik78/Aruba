@@ -429,6 +429,145 @@
             line-height: 1.6;
         }
 
+        /* ── Splash overlay ─────────────────────────────────────────── */
+        .splash-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0a1628 0%, #0f172a 40%, #1a3a6b 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.7s ease, visibility 0.7s ease;
+        }
+
+        .splash-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .splash-content {
+            text-align: center;
+            color: white;
+            max-width: 620px;
+            padding: 48px 40px;
+            animation: splashIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes splashIn {
+            from { opacity: 0; transform: translateY(40px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+
+        .splash-logo {
+            font-size: 88px;
+            line-height: 1;
+            margin-bottom: 28px;
+            display: block;
+            animation: floatBob 3.5s ease-in-out infinite;
+            filter: drop-shadow(0 8px 32px rgba(59,130,246,0.4));
+        }
+
+        @keyframes floatBob {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-12px); }
+        }
+
+        .splash-title {
+            font-size: 44px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: 10px;
+        }
+
+        .splash-title span {
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .splash-sub {
+            font-size: 17px;
+            color: #94a3b8;
+            margin-bottom: 36px;
+            line-height: 1.5;
+        }
+
+        .splash-chips {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 44px;
+        }
+
+        .splash-chip {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-size: 13px;
+            color: #cbd5e1;
+            backdrop-filter: blur(8px);
+            transition: background 0.2s;
+        }
+
+        .splash-chip:hover { background: rgba(255,255,255,0.14); }
+
+        .splash-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #6d28d9 100%);
+            color: white;
+            border: none;
+            padding: 16px 52px;
+            font-size: 17px;
+            font-weight: 700;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.45);
+            letter-spacing: 0.2px;
+        }
+
+        .splash-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 40px rgba(109, 40, 217, 0.5);
+        }
+
+        .splash-timer {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .splash-timer span {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .splash-dots {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .splash-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(96, 165, 250, 0.07);
+            animation: pulseDot 4s ease-in-out infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50%       { transform: scale(1.3); opacity: 1; }
+        }
+        /* ── End splash ──────────────────────────────────────────────── */
+
         @media (max-width: 768px) {
             header {
                 padding: 24px;
@@ -467,6 +606,29 @@
     </style>
 </head>
 <body>
+    <!-- Splash overlay -->
+    <div id="splashOverlay" class="splash-overlay">
+        <div class="splash-dots">
+            <div class="splash-dot" style="width:400px;height:400px;top:-100px;left:-120px;animation-delay:0s;"></div>
+            <div class="splash-dot" style="width:300px;height:300px;bottom:-80px;right:-60px;animation-delay:1.5s;"></div>
+            <div class="splash-dot" style="width:180px;height:180px;top:30%;right:10%;animation-delay:0.8s;"></div>
+        </div>
+        <div class="splash-content">
+            <span class="splash-logo">🚀</span>
+            <h1 class="splash-title">Migration of Sites<br><span>New and Old devices</span></h1>
+            <p class="splash-sub">Aruba Central device onboarding and migration automation.<br>Manage, migrate, and configure network devices at scale.</p>
+            <div class="splash-chips">
+                <div class="splash-chip">📱 Device Management</div>
+                <div class="splash-chip">⚡ Bulk Migration</div>
+                <div class="splash-chip">📊 Live Inventory</div>
+                <div class="splash-chip">⚙️ Configuration</div>
+                <div class="splash-chip">📁 Site Subnets</div>
+            </div>
+            <button class="splash-btn" onclick="dismissSplash()">Get Started →</button>
+            <p class="splash-timer">Auto-continuing in <span id="splashCountdown">5</span>s</p>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <h1>🚀 Migration of Sites New and Old devices</h1>
@@ -1337,8 +1499,24 @@ Building B,192.168.2.0/24,192.168.2.1,10,Branch office</pre>
         }
         // ── End Config Tab ───────────────────────────────────────────────
 
-        // Load devices on page load
-        window.addEventListener('load', loadDevices);
+        // ── Splash page ───────────────────────────────────────────────
+        let _splashInterval = null;
+
+        function dismissSplash() {
+            clearInterval(_splashInterval);
+            document.getElementById('splashOverlay').classList.add('hidden');
+        }
+
+        window.addEventListener('load', () => {
+            loadDevices();
+            let remaining = 5;
+            _splashInterval = setInterval(() => {
+                remaining--;
+                const el = document.getElementById('splashCountdown');
+                if (el) el.textContent = remaining;
+                if (remaining <= 0) dismissSplash();
+            }, 1000);
+        });
     </script>
 </body>
 </html>
