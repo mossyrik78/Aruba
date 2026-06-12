@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.py[cod]
+*.bak
+migration_plan.yaml
+migration_plan.generated.yaml

@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aruba Central Device Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
+            padding: 40px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 {
+            color: #0f172a;
+            margin-bottom: 12px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: #64748b;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-button.active {
+            color: #0f172a;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .tab-button:hover:not(.active) {
+            color: #0f172a;
+            background: rgba(148, 163, 184, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(248,250,252,0.97) 100%);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #0f172a;
+            margin-bottom: 24px;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .card h3 {
+            color: #0f172a;
+            margin: 24px 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #0f172a;
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.2px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: #f8fafc;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 24px;
+            margin-top: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            accent-color: #3b82f6;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .device-list {
+            list-style: none;
+        }
+
+        .device-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(248, 250, 252, 0.7) 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #e2e8f0;
+            border-left: 4px solid #3b82f6;
+            transition: all 0.3s ease;
+        }
+
+        .device-item:hover {
+            border-left-color: #2563eb;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+            transform: translateX(4px);
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-serial {
+            font-weight: 600;
+            color: #0f172a;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 15px;
+        }
+
+        .device-details {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .device-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border-left-color: #10b981;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #7f1d1d;
+            border-left-color: #ef4444;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #1e3a8a;
+            border-left-color: #3b82f6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 32px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: #94a3b8;
+        }
+
+        .empty-state-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.95;
+            letter-spacing: 0.3px;
+        }
+
+        .textarea-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 10px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+        }
+
+        .result-item {
+            background: white;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            border-left: 4px solid #e2e8f0;
+        }
+
+        .result-item.success {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .result-item.error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+            color: #7f1d1d;
+        }
+
+        p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 24px;
+            }
+
+            header h1 {
+                font-size: 24px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .device-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .device-actions {
+                width: 100%;
+            }
+
+            .device-actions button {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Aruba Central Device Manager</h1>
+            <p>Streamline device onboarding and migration workflows with ease</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('devices')">📱 Devices</button>
+            <button class="tab-button" onclick="switchTab('add')">➕ Add Device</button>
+            <button class="tab-button" onclick="switchTab('migrate')">⚡ Migrate</button>
+            <button class="tab-button" onclick="switchTab('inventory')">📊 Inventory</button>
+        </div>
+
+        <!-- Devices Tab -->
+        <div id="devices" class="tab-content active">
+            <div class="card">
+                <h2>Migration Plan Devices</h2>
+                <div id="deviceAlert" class="alert"></div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="deviceCount">0</div>
+                        <div class="stat-label">Total Devices</div>
+                    </div>
+                </div>
+                <ul id="deviceList" class="device-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No devices in your migration plan yet. Add one to get started!</p>
+                    </div>
+                </ul>
+                <div class="loading" id="deviceLoading">
+                    <div class="spinner"></div>
+                    <p>Loading devices...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Device Tab -->
+        <div id="add" class="tab-content">
+            <div class="card">
+                <h2>Add New Device</h2>
+                <div id="addAlert" class="alert"></div>
+                <form id="addDeviceForm" onsubmit="handleAddDevice(event)">
+                    <div class="form-group">
+                        <label for="serial">Serial Number <span style="color: #ef4444;">*</span></label>
+                        <input type="text" id="serial" name="serial" required placeholder="e.g., B8BB12345678">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="model">Model</label>
+                            <input type="text" id="model" name="model" placeholder="e.g., Aruba 6100">
+                        </div>
+                        <div class="form-group">
+                            <label for="deviceType">Device Type</label>
+                            <select id="deviceType" name="device_type">
+                                <option value="">-- Select Type --</option>
+                                <option value="switch">Switch</option>
+                                <option value="access_point">Access Point</option>
+                                <option value="controller">Controller</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="site">Site</label>
+                            <input type="text" id="site" name="site" placeholder="e.g., Building A - Floor 3">
+                        </div>
+                        <div class="form-group">
+                            <label for="macAddress">MAC Address</label>
+                            <input type="text" id="macAddress" name="mac_address" placeholder="e.g., 00:11:22:33:44:55">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="templateId">Template ID</label>
+                            <input type="text" id="templateId" name="template_id" placeholder="Template identifier">
+                        </div>
+                        <div class="form-group">
+                            <label for="firmwareGroupId">Firmware Group ID</label>
+                            <input type="text" id="firmwareGroupId" name="firmware_group_id" placeholder="Firmware group identifier">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="uiGroupId">UI Group ID</label>
+                        <input type="text" id="uiGroupId" name="ui_group_id" placeholder="UI group identifier">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Configuration Options</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="wipe" name="wipe">
+                                <label for="wipe" style="margin: 0;">Factory Reset Device</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="claim" name="claim" checked>
+                                <label for="claim" style="margin: 0;">Claim in Central</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 32px;">
+                        <button type="submit" class="btn-primary" style="flex: 1;">➕ Add Device</button>
+                        <button type="reset" class="btn-secondary">Clear Form</button>
+                    </div>
+                </form>
+
+                <div style="margin-top: 48px; padding-top: 32px; border-top: 2px solid #e2e8f0;">
+                    <h3>Or Import from CSV</h3>
+                    <p style="margin: 12px 0 24px 0;">Upload a CSV file with serial numbers and MAC addresses to add multiple devices at once.</p>
+                    <div id="csvAlert" class="alert"></div>
+                    <div class="form-group">
+                        <label for="csvFile">CSV File <span style="color: #ef4444;">*</span></label>
+                        <input type="file" id="csvFile" accept=".csv" style="padding: 8px; border: 2px dashed #e2e8f0; cursor: pointer;">
+                    </div>
+                    <div style="margin: 16px 0;">
+                        <p style="font-size: 13px; color: #64748b;">
+                            <strong>CSV Format:</strong> Must include a "serial" or "serial_number" column. 
+                            Optional columns: mac, mac_address, model, type/device_type, site
+                        </p>
+                        <details style="margin-top: 12px;">
+                            <summary style="cursor: pointer; color: #3b82f6; font-weight: 500;">📋 View CSV Example</summary>
+                            <pre style="margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 8px; overflow-x: auto; font-size: 12px;">serial,mac,model,device_type,site
+B8BB12345678,00:11:22:33:44:55,Aruba 6100,switch,Building A
+B8BB23456789,00:11:22:33:44:66,Aruba AP-515,access_point,Building B</pre>
+                        </details>
+                    </div>
+                    <button class="btn-success" onclick="handleCSVUpload()" style="width: 100%; padding: 12px;">📥 Import Devices from CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Migrate Tab -->
+        <div id="migrate" class="tab-content">
+            <div class="card">
+                <h2>Migrate Devices</h2>
+                <div id="migrateAlert" class="alert"></div>
+                <p>Migrate devices to apply templates, update firmware, and apply configurations in bulk or individually.</p>
+
+                <div style="margin: 28px 0;">
+                    <button class="btn-success" onclick="migrateAll()" style="width: 100%; padding: 14px; font-size: 16px;">
+                        ⚡ Migrate All Devices
+                    </button>
+                </div>
+
+                <h3>Or select individual devices:</h3>
+                <ul id="migrateList" class="device-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No devices available. Add devices first.</p>
+                    </div>
+                </ul>
+
+                <div class="loading" id="migrateLoading">
+                    <div class="spinner"></div>
+                    <p>Migrating device...</p>
+                </div>
+
+                <div id="migrateResults" style="display: none; margin-top: 24px;">
+                    <h3>📋 Migration Results</h3>
+                    <div id="resultsContainer" class="textarea-scroll"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Tab -->
+        <div id="inventory" class="tab-content">
+            <div class="card">
+                <h2>Aruba Central Inventory</h2>
+                <div id="inventoryAlert" class="alert"></div>
+                <p>View all devices currently registered in your Aruba Central account.</p>
+                <div style="display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap;">
+                    <button class="btn-primary" onclick="loadInventory()">🔄 Refresh Inventory</button>
+                    <button class="btn-success" onclick="importAllInventory()">📥 Import All to Plan</button>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="inventoryCount">0</div>
+                        <div class="stat-label">Devices in Central</div>
+                    </div>
+                </div>
+                <ul id="inventoryList" class="device-list" style="margin-top: 20px;">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>Click refresh to load devices from Aruba Central</p>
+                    </div>
+                </ul>
+                <div class="loading" id="inventoryLoading">
+                    <div class="spinner"></div>
+                    <p>Loading inventory from Aruba Central...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+
+            // Auto-load data when switching tabs
+            if (tabName === 'devices') {
+                loadDevices();
+            } else if (tabName === 'migrate') {
+                loadDevicesForMigration();
+            } else if (tabName === 'inventory') {
+                loadInventory();
+            }
+        }
+
+        function showAlert(message, type, elementId) {
+            const alertEl = document.getElementById(elementId);
+            alertEl.textContent = message;
+            alertEl.className = `alert show alert-${type}`;
+            setTimeout(() => {
+                alertEl.classList.remove('show');
+            }, 5000);
+        }
+
+        async function loadDevices() {
+            const loading = document.getElementById('deviceLoading');
+            const list = document.getElementById('deviceList');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/devices');
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    const devices = data.devices;
+                    document.getElementById('deviceCount').textContent = devices.length;
+
+                    if (devices.length === 0) {
+                        list.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <p>No devices in migration plan. Add one to get started!</p>
+                            </div>
+                        `;
+                    } else {
+                        list.innerHTML = devices.map(device => `
+                            <li class="device-item">
+                                <div class="device-info">
+                                    <div class="device-serial">${device.serial}</div>
+                                    <div class="device-details">
+                                        ${device.model ? `Model: ${device.model} | ` : ''}
+                                        ${device.device_type ? `Type: ${device.device_type} | ` : ''}
+                                        ${device.site ? `Site: ${device.site}` : ''}
+                                    </div>
+                                </div>
+                                <div class="device-actions">
+                                    <button class="btn-small btn-danger" onclick="removeDevice('${device.serial}')">Remove</button>
+                                </div>
+                            </li>
+                        `).join('');
+                    }
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'deviceAlert');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showAlert(`Error loading devices: ${error}`, 'error', 'deviceAlert');
+            }
+        }
+
+        async function handleAddDevice(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const deviceData = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/devices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deviceData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('Device added successfully!', 'success', 'addAlert');
+                    form.reset();
+                    loadDevices();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'addAlert');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error}`, 'error', 'addAlert');
+            }
+        }
+
+        async function removeDevice(serial) {
+            if (!confirm(`Are you sure you want to remove device ${serial}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/devices/${serial}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('Device removed successfully!', 'success', 'deviceAlert');
+                    loadDevices();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'deviceAlert');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error}`, 'error', 'deviceAlert');
+            }
+        }
+
+        async function handleCSVUpload() {
+            const fileInput = document.getElementById('csvFile');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showAlert('Please select a CSV file to upload', 'error', 'csvAlert');
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            if (!file.name.endsWith('.csv')) {
+                showAlert('Please select a CSV file (.csv)', 'error', 'csvAlert');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/import-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    let message = `✓ Successfully imported ${data.added} devices`;
+                    if (data.skipped > 0) message += `, ${data.skipped} already in plan`;
+                    if (data.errors && data.errors.length > 0) {
+                        message += `, ${data.errors.length} errors`;
+                    }
+                    showAlert(message, 'success', 'csvAlert');
+                    fileInput.value = '';
+                    loadDevices();
+                    
+                    if (data.errors && data.errors.length > 0) {
+                        console.log('Import errors:', data.errors);
+                    }
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'csvAlert');
+                }
+            } catch (error) {
+                showAlert(`Error uploading file: ${error}`, 'error', 'csvAlert');
+            }
+        }
+
+        async function loadDevicesForMigration() {
+            try {
+                const response = await fetch('/api/devices');
+                const data = await response.json();
+
+                if (data.success) {
+                    const devices = data.devices;
+                    const list = document.getElementById('migrateList');
+
+                    if (devices.length === 0) {
+                        list.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <p>No devices available. Add devices first.</p>
+                            </div>
+                        `;
+                    } else {
+                        list.innerHTML = devices.map(device => `
+                            <li class="device-item">
+                                <div class="device-info">
+                                    <div class="device-serial">${device.serial}</div>
+                                    <div class="device-details">
+                                        ${device.model ? `Model: ${device.model} | ` : ''}
+                                        ${device.device_type ? `Type: ${device.device_type}` : ''}
+                                    </div>
+                                </div>
+                                <div class="device-actions">
+                                    <button class="btn-small btn-success" onclick="migrateSingleDevice('${device.serial}')">Migrate</button>
+                                </div>
+                            </li>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                showAlert(`Error loading devices: ${error}`, 'error', 'migrateAlert');
+            }
+        }
+
+        async function migrateSingleDevice(serial) {
+            if (!confirm(`Migrate device ${serial}? This action cannot be undone.`)) {
+                return;
+            }
+
+            const loading = document.getElementById('migrateLoading');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch(`/api/migrate/${serial}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    showAlert(`Device ${serial} migrated successfully!`, 'success', 'migrateAlert');
+                    loadDevicesForMigration();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'migrateAlert');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showAlert(`Error: ${error}`, 'error', 'migrateAlert');
+            }
+        }
+
+        async function migrateAll() {
+            if (!confirm('Migrate ALL devices? This action cannot be undone.')) {
+                return;
+            }
+
+            const loading = document.getElementById('migrateLoading');
+            const results = document.getElementById('migrateResults');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/migrate', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    const resultItems = data.results.map(result => `
+                        <div class="result-item ${result.success ? 'success' : 'error'}">
+                            <strong>${result.serial}:</strong> ${result.success ? '✓ Success' : '✗ Error: ' + result.error}
+                        </div>
+                    `).join('');
+
+                    resultsContainer.innerHTML = resultItems;
+                    results.style.display = 'block';
+                    showAlert('Migration completed! Check results below.', 'success', 'migrateAlert');
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'migrateAlert');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showAlert(`Error: ${error}`, 'error', 'migrateAlert');
+            }
+        }
+
+        async function loadInventory() {
+            const loading = document.getElementById('inventoryLoading');
+            const list = document.getElementById('inventoryList');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/inventory');
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    const devices = data.devices;
+                    document.getElementById('inventoryCount').textContent = devices.length;
+
+                    if (devices.length === 0) {
+                        list.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <p>No devices found in Aruba Central inventory.</p>
+                            </div>
+                        `;
+                    } else {
+                        list.innerHTML = devices.map(device => `
+                            <li class="device-item">
+                                <div class="device-info">
+                                    <div class="device-serial">${device.serial_number || device.serial || 'N/A'}</div>
+                                    <div class="device-details">
+                                        ${device.model_type ? `Type: ${device.model_type} | ` : ''}
+                                        ${device.device_type ? `Device: ${device.device_type} | ` : ''}
+                                        Status: ${device.status || 'Unknown'}
+                                    </div>
+                                </div>
+                            </li>
+                        `).join('');
+                    }
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'inventoryAlert');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showAlert(`Error loading inventory: ${error}`, 'error', 'inventoryAlert');
+            }
+        }
+
+        async function importAllInventory() {
+            if (!confirm('Import all devices from Aruba Central inventory to the migration plan? Existing devices will be skipped.')) {
+                return;
+            }
+
+            const loading = document.getElementById('inventoryLoading');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/import-inventory', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    showAlert(`✓ Successfully imported ${data.added} devices. ${data.skipped} devices were already in the plan.`, 'success', 'inventoryAlert');
+                    loadDevices();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error', 'inventoryAlert');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                showAlert(`Error: ${error}`, 'error', 'inventoryAlert');
+            }
+        }
+
+        // Load devices on page load
+        window.addEventListener('load', loadDevices);
+    </script>
+</body>
+</html>

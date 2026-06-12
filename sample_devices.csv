@@ -1,0 +1,5 @@
+serial,mac,model,device_type,site
+C1CC10000001,AA:BB:CC:DD:EE:01,Aruba 6100,switch,Floor 1
+C1CC10000002,AA:BB:CC:DD:EE:02,Aruba 6100,switch,Floor 2
+C1CC10000003,AA:BB:CC:DD:EE:03,Aruba AP-515,access_point,Building A
+C1CC10000004,AA:BB:CC:DD:EE:04,Aruba AP-515,access_point,Building B
