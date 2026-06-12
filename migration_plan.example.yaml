@@ -1,0 +1,39 @@
+central:
+  base_url: https://portal2.central-eu.arubanetworks.com
+  client_id: YOUR_CLIENT_ID
+  client_secret: YOUR_CLIENT_SECRET
+  verify_ssl: true
+
+templates:
+  default_template_id: DEFAULT_TEMPLATE_ID
+
+template_rules:
+  "6100": SWITCH_TEMPLATE_ID
+  "ap": AP_TEMPLATE_ID
+
+firmware_group_rules:
+  "6100": SWITCH_FIRMWARE_GROUP_ID
+  "ap": AP_FIRMWARE_GROUP_ID
+
+ui_group_rules:
+  "6100": SWITCH_UI_GROUP_ID
+  "ap": AP_UI_GROUP_ID
+
+devices:
+  - serial: B8BB12345678
+    model: Aruba 6100
+    device_type: switch
+    template_id: SWITCH_TEMPLATE_ID
+    firmware_group_id: SWITCH_FIRMWARE_GROUP_ID
+    ui_group_id: SWITCH_UI_GROUP_ID
+    wipe: true
+    claim: true
+    mac_address: 00:11:22:33:44:55
+  - serial: B8BB23456789
+    model: Aruba AP-515
+    device_type: access_point
+    template_id: AP_TEMPLATE_ID
+    firmware_group_id: AP_FIRMWARE_GROUP_ID
+    ui_group_id: AP_UI_GROUP_ID
+    wipe: false
+    claim: true
